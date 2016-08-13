@@ -1,0 +1,206 @@
+    
+	Applet Producer-Consumer
+
+  gives solution to the asynchronous production and consumption of information.
+  Producer place Objects in the Queue and Consumer pulls them from the Queue. 
+  In the distributed system the Producer (sender of data) and Consumer(receiver of data)
+  may reside in different subsystems, which may be integrated not so tightly. 
+  For the model with simple direct topology Consumer is the direct listener of Producer.
+  For the model with Queuing adapter sending of an event in Producer 
+  is decoupled with receiving of events in the Consumer by Queue. 
+  Other models are considered in the Event Model. 
+  (https://www.cs.bgu.ac.il/~elhadad/se/events.html)
+  
+  The Asynchronous and Synchronous layers in the Architectural Pattern Half-Sync/Half-Async  
+  (http://www.cs.wustl.edu/~schmidt/patterns-ace.html)
+  communicate as a Producer (Asynchronous layer) and Consumer (Synchronous layer) 
+  by passing messages through Message Queue. 
+  Message-Driven Beans of the EJB 2.0 allow a loose coupling between the 
+  Message Producer and the Message Consumer. Application example of this framework 
+  is the Publish/Subscribe Application 
+  (http://www.onjava.com/pub/a/onjava/2001/05/22/ejb_msg.html), 
+  where Producer is a Publisher and Consumer is a Subscriber. 
+  The typical Producer/Consumer example can be found on the Java Sun site. 
+  Java Message Service (JMS) programming model includes a supplier named MessageProducer 
+  and consumer named MessageConsumer. This model is very close to the Notification Service model. 
+  In the article JMS and CORBA Notification Interworking relation between Notification Service 
+  and JMS interfaces is considered 
+  (http://www.onjava.com/pub/a/onjava/2001/12/12/jms_not.html).
+  
+     Independent Animation Canvases
+  
+  Animation implemented in two Views: Producer Consumer Console (PC Console) and Thread Monitor (TM View), 
+  every view in own thread, updating with own renewal period: 200 ms for PC Console and 400 ms for TM View. 
+
+    
+     public class PCCanvas extends Canvas implements Runnable {
+        ...
+        public synchronized void setPCCanvasStop() { runPCCanvas = false; }
+        public synchronized void setPCCanvasRun() { runPCCanvas = true; }
+        public synchronized boolean getPCCanvasFlag() { return runPCCanvas; }
+        ...
+        public void run() {
+          while(getPCCanvasFlag()) {
+            try {
+              Thread.sleep(pcPeriod);
+            } catch ( java.lang.InterruptedException ie) {
+              ...
+            }
+            repaint();
+          }
+        }
+        ...
+        public void startPCCanvas() {
+	  if (threadPCCanvas == null)
+	    {
+		  threadPCCanvas = new Thread(this, "PC Console");
+		  threadPCCanvas.start();
+	    }
+        }
+     }
+   
+
+    When browser leaves current page the method setPCCanvasStop() of class PCCanvas 
+	is invoked from the method stop() of class ApprocoApplet, 
+	inheriting from the Applet and repaint loop will be broken. 
+	Similarly, for the TM View: 
+
+  
+     public class TMCanvas extends Canvas implements Runnable {         
+       ...
+       public void run() {
+          while(getTMCanvasFlag()) {
+            try {
+              Thread.sleep(tmPeriod);
+            } catch ( java.lang.InterruptedException ie) {
+              ...
+            }
+            repaint();
+          }
+       }
+     }
+
+	 
+	 Thread Monitor
+
+    There are 7 threads in the applet Approco: 4 Consumers Threads, Producer Thread, 
+	PC Console Thread and TM View Thread. 6 of these threads are monitored in the TM View 
+	(all except for TM View itself). As it was menthioned above polling period for thread List 
+	is set to the 400 ms. But these threads not all thread running in the applet. 
+	Open "Java Console" of your browser and type "t" (threads). 
+	Java Console shows AWT threads AWT-EventQueue-0 and AWT-Windows. 
+	Some other threads of Java VM of concrete browser are running with the applet. 
+	AWT-EventQueue-0 thread calls object's event handling methods such as actionPerformed . 
+
+  
+    public class ConsumerButton extends Button implements ActionListener {     
+     ...
+     public ConsumerButton(String str,int numb) {
+        super(str);
+        numbOfButton = numb;
+        name = str;
+        addActionListener(this);
+        setFont(plainFont);
+        changeLabelToStop();
+     }
+     ...
+     public void actionPerformed(java.awt.event.ActionEvent ae) {
+        String name = ae.getActionCommand();
+
+        if (isCurrentNameEqualStop()) {
+               changeLabelToStart();
+               return;
+        }
+        if (isCurrentNameEqualStart()) {
+               changeLabelToStop();
+               return;
+        }
+     }
+  }
+  
+      Snapshot from the Internet Explorer 5 Java Console
+  
+
+     Pri 5 AWT-EventQueue-0
+     Pri 5 AWT-Windows
+     Pri 10 TaskManager notify thread
+     Pri 5 main
+     Pri 6 thread applet-Approco/ApprocoApplet.class
+     Pri 6 Consumer 1
+     Pri 6 Consumer 2
+     Pri 6 Consumer 3
+     Pri 6 Consumer 4
+     Pri 6 Producer
+     Pri 6 Monitor
+     Pri 6 PC Console
+     Pri 5 Global Task Manager Thread #0
+     Pri 5 Global Task Manager Thread #1
+     
+
+     Snapshot from the Netscape 6 Java Console
+ 
+    main,5,alive
+    AWT-Windows,6,alive,dameon
+    AWT-Shutdown,6,alive
+    AWT-EventQueue-0,6,alive
+    TimerQueue,5,alive,dameon
+    Thread-2,5,alive
+    Thread-3,5,alive
+    thread applet-Approco/ApprocoApplet.class,4,alive
+    AWT-EventQueue-1,4,alive
+    Consumer 1,4,alive
+    Consumer 2,4,alive
+    Consumer 3,4,alive
+    Consumer 4,4,alive
+    Producer,4,alive
+    Monitor,4,alive
+    PC Console,4,alive
+  
+    The applet's update and paint methods do the actual drawing and execute 
+	in the AWT-EventQueue-0 thread because updating and painting are panel events. 
+	How to get Java Trace Stack for Solaris and Windows platform described 
+	in the An Introduction to Java Stack Traces or in Advanced Programming 
+	for the JavaTM 2 Platform 
+
+    Model-View-Controller Pattern
+
+    simplifiers design and writing the code. Some advantages of MVC are clarified 
+	in the the model-view-controller (MVC) design pattern. 
+    (http://cristobal.baray.com/indiana/projects/mvc2.html)
+	Just by breaking the program down 
+	into the three MVC components, gains many .... Multiply view: the application can display 
+	the state of model in some views. Applet Approco has two views: 
+	Thread Monitor View and Producer Consumer Console. 
+	Applet controller contains some listeners: 
+	"Number of Consumers", "Queue Mode", "Production Period", "URL Label". 
+	Cristobal Baray (http://cristobal.baray.com/indiana/projects/mvc5.html)
+	prefers pure MVC pattern, where controller doesn't control view , 
+	only through model. It maybe approach, where controller controls both model and view, 
+	and model also updates view. 
+	
+	Selected Links
+
+1. Software Engineering - Fall 1999, by Michael Elhadad 
+   https://www.cs.bgu.ac.il/~elhadad/se/events.html
+
+2. Patterns for Concurrent, Parallel, and Distributed Systems, by Douglas C. Schmidt, November 2001 
+Event Patterns. Concurrency Patterns and Idioms. Initialization Patterns. Miscellaneous Patterns 
+   http://www.cs.wustl.edu/~schmidt/patterns-ace.html   
+
+
+3. EJB 2 Message-Driven Beans, by Dion Almaer 
+Working with the new Message Driven Beans and JMS. JMS Architecture. 
+Point-to-Point application. Publish/Subscribe Application 
+   http://www.onjava.com/pub/a/onjava/2001/05/22/ejb_msg.html
+
+4. JMS and CORBA Notification Interworking, by Steve Trythall, 12/12/2001 
+CORBA Notification Service, JMS, Integration Points. 
+Message Conversions. Message Types. Message Filtering. 
+   http://www.onjava.com/pub/a/onjava/2001/12/12/jms_not.html
+
+
+5. The model-view-controller (MVC) design pattern, by Cristobal Baray 
+MVC introduction. MVC advantages. MVC toy example. The heartbeat model. T
+he heartbeat controller. The heartbeat view. MVC things to do... MVC pointers. 
+   http://cristobal.baray.com/indiana/projects/mvc.html
+
